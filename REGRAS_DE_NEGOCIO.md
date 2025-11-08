@@ -1,5 +1,7 @@
 # 📜 Regras de Negócio - Projeto Rua do Céu
 
+> **Última atualização**: 2025-11-08
+
 ## 1. Gestão de Usuários e Acesso
 
 ### 1.1. Papéis de Usuário
@@ -24,6 +26,13 @@
 3.  **Redefinição**: O usuário usa o link enviado por email para definir uma nova senha.
 4.  **Invalidação de Sessões**: Ao redefinir a senha, o campo `password_version` do usuário é incrementado. Todos os `access_token` e `refresh_token` emitidos anteriormente para aquele usuário se tornam inválidos, forçando um novo login em todos os dispositivos.
 
+### 1.4.1. Associação com Locais
+- Durante a aprovação de um novo colaborador, o `Admin` deve associá-lo a um ou mais `locais` de trabalho.
+- Um colaborador pode ser associado a múltiplos locais (relacionamento Many-to-Many através da tabela `colaborador_locais`).
+- A associação é única: um colaborador não pode ser associado duas vezes ao mesmo local.
+- Um colaborador só pode visualizar e operar com crianças, doações e check-ins dos locais aos quais está associado.
+- Um `Admin` pode visualizar dados de todos os locais e não tem restrições de acesso.
+
 ### 1.5. Permissões de Acesso
 | Operação | Admin | Colaborador |
 |---|---|---|
@@ -31,13 +40,15 @@
 | Aprovar Colaboradores | ✅ | ❌ |
 | Gerenciar Locais (CRUD) | ✅ | ❌ |
 | Gerenciar Crianças (CRUD) | ✅ | ✅ |
-| Deletar Crianças | ✅ | ❌ |
+| Deletar Crianças* | ✅ | ✅ |
 | Gerenciar Doações (CRUD) | ✅ | ✅ |
-| Deletar Doações | ✅ | ❌ |
+| Deletar Doações* | ✅ | ✅ |
 | Gerenciar Check-ins | ✅ | ✅ |
 | Gerenciar Tags de Saúde | ✅ | ✅ |
 | Visualizar Relatórios | ✅ | ✅ |
 | Visualizar Logs de Auditoria | ✅ | ❌ |
+
+> **Nota**: *Colaboradores podem deletar crianças e doações dos seus locais associados, desde que não possuam check-ins relacionados (manutenção de integridade histórica).
 
 ---
 
@@ -53,6 +64,8 @@
 ### 2.3. Tags de Saúde
 - Tags de saúde (ex: "Alergia a Leite") podem ser criadas e associadas a múltiplas crianças.
 - Uma tag não pode ser excluída se estiver associada a pelo menos uma criança.
+- Cada tag pode ter uma cor para identificação visual na interface (ex: `#FF5733` para alergias).
+- Ao associar uma tag a uma criança, é possível adicionar uma observação específica (ex: "Alergia severa a leite integral").
 
 ---
 
@@ -67,6 +80,9 @@
 - Permite registrar a presença ou ausência de várias crianças de uma vez.
 - Todos os check-ins de uma operação em massa recebem o mesmo `sessao_id` para agrupamento.
 - O sistema valida o estoque total necessário para todos os presentes antes de confirmar a operação.
+- **Validação Transacional**: O sistema agrupa todas as quantidades solicitadas por doação e valida o estoque de forma atômica. Se qualquer doação não tiver estoque suficiente, a operação inteira falha e nenhum check-in é criado.
+- Cada criança presente consome `1` unidade da doação por padrão, a menos que `quantidade_consumida` seja especificada.
+- Crianças marcadas como ausentes (`presente: false`) não consomem estoque, mesmo que uma doação seja associada.
 
 ### 3.3. Doações de Aniversário
 - Uma doação do tipo `Presente de Aniversário` deve, obrigatoriamente, ter uma ou mais `crianças_destinatarias`.
@@ -98,7 +114,37 @@
 
 ---
 
-## 5. Auditoria
+## 5. Auditoria e Logs
 
+### 5.1. Registro de Auditoria
 - Todas as operações de criação (`INSERT`), atualização (`UPDATE`) e exclusão (`DELETE`) nas tabelas principais (`profiles`, `criancas`, `doacoes`, etc.) são registradas na tabela `audit_logs`.
-- O log armazena o usuário responsável, a operação, a tabela, o ID do registro, e os valores antigos e novos (para updates).
+- O log armazena o seguinte:
+  - **table_name**: Nome da tabela afetada (ex: `criancas`, `doacoes`).
+  - **operation**: Tipo de operação (`INSERT`, `UPDATE`, `DELETE`).
+  - **record_id**: ID do registro afetado.
+  - **user_id**: ID do usuário que realizou a ação.
+  - **old_values**: JSON com os valores antigos do registro (apenas para `UPDATE`).
+  - **new_values**: JSON com os valores novos do registro (para `INSERT` e `UPDATE`).
+  - **ip_address**: Endereço IP do cliente que fez a requisição.
+  - **user_agent**: Identificação do navegador ou cliente HTTP.
+  - **created_at**: Data e hora em que o log foi criado.
+
+### 5.2. Acessibilidade de Logs
+- Apenas usuários com `role: 'admin'` podem visualizar logs de auditoria.
+- Colaboradores (`role: 'user'`) não têm acesso a esta informação.
+
+---
+
+## 6. Segurança e Controle de Acesso
+
+### 6.1. Filtro de Acesso por Local
+- **Middleware `requireLocalAccess`**: Valida se o usuário tem permissão para acessar os locais solicitados em cada operação.
+- **Comportamento para Colaboradores**: Um colaborador só pode acessar dados (crianças, doações, check-ins) dos locais aos quais está associado via tabela `colaborador_locais`.
+- **Comportamento para Admin**: Administradores têm acesso irrestrito a todos os locais.
+- **Proteção em Massa**: Nas operações em lote (como `/checkins/bulk`), o sistema valida que **todos** os locais solicitados são acessíveis ao usuário.
+
+### 6.2. Restrições de Exclusão
+- Uma `doação` não pode ser excluída se tiver `check-ins` associados (previne inconsistências de estoque).
+- Um `local` não pode ser excluído se tiver `crianças` ou `check-ins` associados (garante integridade referencial).
+- Uma `criança` não pode ser excluída se tiver `check-ins` associados (preserva histórico de atendimento).
+- Uma `TagSaude` não pode ser excluída se estiver associada a pelo menos uma criança (evita perda de informações médicas).

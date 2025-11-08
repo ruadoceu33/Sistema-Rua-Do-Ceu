@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Sistema de Design para Serviço Beneficiário
+   Cores quentes e acolhedoras, focadas em caridade infantil
+   Todas as cores em HSL para máxima flexibilidade */
+
+@layer base {
+  :root {
+    /* Cores base - tons neutros suaves */
+    --background: 220 15% 98%;
+    --foreground: 215 25% 15%;
+
+    /* Cards e superfícies elevadas */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --card-border: 220 15% 92%;
+
+    /* Popovers e dropdowns */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Primário - Azul esperançoso */
+    --primary: 210 85% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 210 85% 68%;
+    --primary-dark: 210 85% 48%;
+
+    /* Secundário - Verde caridade */
+    --secondary: 160 70% 55%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 160 70% 65%;
+    --secondary-dark: 160 70% 45%;
+
+    /* Terciário - Laranja amigável */
+    --tertiary: 25 95% 58%;
+    --tertiary-foreground: 0 0% 100%;
+    --tertiary-light: 25 95% 68%;
+    --tertiary-dark: 25 95% 48%;
+
+    /* Cores suaves para fundos */
+    --muted: 220 15% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Accent - Rosa suave para aniversários */
+    --accent: 330 75% 75%;
+    --accent-foreground: 330 75% 25%;
+    --accent-light: 330 75% 85%;
+    --accent-dark: 330 75% 65%;
+
+    /* Estados e feedback */
+    --success: 140 70% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 90% 58%;
+    --warning-foreground: 45 90% 15%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Bordas e inputs */
+    --border: 220 15% 88%;
+    --input: 220 15% 94%;
+    --ring: 210 85% 58%;
+
+    /* Configurações de design */
+    --radius: 0.75rem;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Gradientes para elementos especiais */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-light)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-light)));
+    --gradient-warm: linear-gradient(135deg, hsl(var(--tertiary)), hsl(var(--accent)));
+
+    /* Sombras elegantes */
+    --shadow-sm: 0 1px 3px 0 hsl(var(--primary) / 0.1), 0 1px 2px 0 hsl(var(--primary) / 0.06);
+    --shadow-md: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(var(--primary) / 0.1), 0 10px 10px -5px hsl(var(--primary) / 0.04);
+
+    /* Sidebar - tons neutros */
+    --sidebar-background: 220 15% 97%;
+    --sidebar-foreground: 215 25% 20%;
+    --sidebar-primary: 210 85% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 94%;
+    --sidebar-accent-foreground: 215 25% 20%;
+    --sidebar-border: 220 15% 90%;
+    --sidebar-ring: 210 85% 58%;
+  }
+
+  .dark {
+    /* Modo escuro com tons quentes */
+    --background: 215 28% 8%;
+    --foreground: 210 40% 95%;
+
+    --card: 215 28% 10%;
+    --card-foreground: 210 40% 95%;
+    --card-border: 215 28% 15%;
+
+    --popover: 215 28% 10%;
+    --popover-foreground: 210 40% 95%;
+
+    --primary: 210 85% 65%;
+    --primary-foreground: 215 28% 8%;
+    --primary-light: 210 85% 75%;
+    --primary-dark: 210 85% 55%;
+
+    --secondary: 160 70% 60%;
+    --secondary-foreground: 215 28% 8%;
+    --secondary-light: 160 70% 70%;
+    --secondary-dark: 160 70% 50%;
+
+    --tertiary: 25 95% 65%;
+    --tertiary-foreground: 215 28% 8%;
+    --tertiary-light: 25 95% 75%;
+    --tertiary-dark: 25 95% 55%;
+
+    --muted: 215 28% 12%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 330 75% 70%;
+    --accent-foreground: 330 75% 15%;
+    --accent-light: 330 75% 80%;
+    --accent-dark: 330 75% 60%;
+
+    --success: 140 70% 55%;
+    --success-foreground: 215 28% 8%;
+    --warning: 45 90% 65%;
+    --warning-foreground: 45 90% 10%;
+    --destructive: 0 75% 65%;
+    --destructive-foreground: 215 28% 8%;
+
+    --border: 215 28% 18%;
+    --input: 215 28% 15%;
+    --ring: 210 85% 65%;
+
+    --sidebar-background: 215 28% 6%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 210 85% 65%;
+    --sidebar-primary-foreground: 215 28% 6%;
+    --sidebar-accent: 215 28% 12%;
+    --sidebar-accent-foreground: 210 40% 90%;
+    --sidebar-border: 215 28% 15%;
+    --sidebar-ring: 210 85% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Utilitários personalizados para o sistema beneficiário */
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-warm {
+    background: var(--gradient-warm);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .transition-smooth {
+    transition: var(--transition);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animações personalizadas */
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.6s ease-out;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Padrões de foco acessível */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  .border-rainbow {
+    border-width: 2px;
+    border-style: solid;
+    border-image: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet) 1;
+  }
+}

@@ -1,0 +1,241 @@
+// Este é o arquivo de schema do Prisma. Ele é a "planta baixa" do seu banco de dados.
+// É aqui que você define suas tabelas (chamadas de `models`), os campos dentro delas e como elas se relacionam.
+
+// O bloco `generator` especifica qual cliente será gerado a partir deste schema.
+// Neste caso, estamos gerando o Prisma Client para JavaScript/TypeScript, que nos permite interagir com o banco de dados de forma segura e tipada.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// O bloco `datasource` define a conexão com o banco de dados.
+// Ele especifica o tipo de banco (provider) e a URL de conexão, que é pega de uma variável de ambiente para segurança.
+datasource db {
+  provider  = "postgresql" // Estamos usando PostgreSQL.
+  url       = env("NEON_DB_URL") // A URL de conexão principal.
+  directUrl = env("NEON_DB_URL") // URL para tarefas que precisam de uma conexão direta, como migrações.
+}
+
+// --- DEFINIÇÃO DOS MODELS (TABELAS) ---
+
+// Model para perfis de usuários (Colaboradores e Administradores).
+model Profile {
+  id                 String             @id @default(uuid()) // Chave primária (PK) com um UUID gerado automaticamente.
+  nome               String
+  email              String             @unique // O email deve ser único para cada usuário.
+  password           String             @default("temp_password") // Senha com hash. O valor padrão é para contas criadas via Google.
+  telefone           String?
+  role               String             @default("user") // Papel do usuário: "user" (colaborador) ou "admin".
+  google_id          String?            @unique // Armazena o ID único do Google para usuários que logam com OAuth.
+  ativo              Boolean            @default(false) // Um usuário só pode logar se estiver ativo.
+
+  // Campos para o fluxo de aprovação de novos colaboradores.
+  status_aprovacao   String             @default("pendente") // Status: "pendente", "aprovado", "rejeitado".
+  
+  // Campo de segurança para invalidar tokens JWT após a troca de senha.
+  password_version   Int                @default(1) // Incrementado a cada mudança de senha.
+
+  created_at         DateTime           @default(now()) // Data de criação do registro.
+  updated_at         DateTime           @updatedAt // Data da última atualização, gerenciada pelo Prisma.
+
+  // Relacionamentos: um perfil pode ter vários logs, vínculos com locais e tokens de reset.
+  audit_logs         AuditLog[]
+  colaborador_locais ColaboradorLocal[]
+  password_resets    PasswordResetToken[]
+
+  @@map("profiles") // Mapeia este model para a tabela "profiles" no banco de dados.
+}
+
+// Model para os locais de atendimento do projeto.
+model Local {
+  id                 String             @id @default(uuid())
+  nome               String
+  endereco           String
+  responsavel        String?
+  telefone           String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  // Relacionamentos: um local pode ter muitos check-ins, colaboradores, crianças e doações.
+  checkins           Checkin[]
+  colaborador_locais ColaboradorLocal[]
+  criancas           Crianca[]
+  doacoes            Doacao[]
+
+  @@map("locais")
+}
+
+// Model para as crianças atendidas pelo projeto.
+model Crianca {
+  id                   String                 @id @default(uuid())
+  nome                 String
+  data_nascimento      DateTime
+  idade                Int? // A idade é calculada e armazenada para facilitar consultas.
+
+  // Múltiplos contatos de responsáveis.
+  responsavel           String?
+  telefone_responsavel  String?
+  responsavel2          String?
+  telefone_responsavel2 String?
+  responsavel3          String?
+  telefone_responsavel3 String?
+
+  endereco             String?
+
+  // Campos relacionados à educação.
+  escola                      String?
+  numero_escola               String?
+
+  // Relacionamento Many-to-Many com Tags de Saúde através da tabela `CriancaSaude`.
+  tags_saude           CriancaSaude[]
+
+  observacoes          String?
+  ativo                Boolean?               @default(true)
+  local_id             String? // Chave estrangeira (FK) para o model `Local`.
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @updatedAt
+
+  // Relacionamentos
+  checkins             Checkin[]
+  local                Local?                 @relation(fields: [local_id], references: [id]) // Define o relacionamento com `Local`.
+  presentes_recebidos  DoacaoDestinatario[]
+
+  @@map("criancas")
+}
+
+// Model para as doações recebidas.
+model Doacao {
+  id                 String                 @id @default(uuid())
+  doador             String
+  tipo_doacao        String // Ex: "Alimentos", "Roupas", "Presente de Aniversário".
+  descricao          String?
+  quantidade         Int? // Quantidade total da doação (ex: 50 kg de arroz).
+  unidade            String? // Unidade de medida (ex: "kg", "pacotes", "unidades").
+  data_doacao        DateTime               @default(now())
+  local_id           String // FK para o local que recebeu a doação.
+  created_at         DateTime               @default(now())
+  updated_at         DateTime               @updatedAt
+
+  // Relacionamentos
+  checkins           Checkin[] // Doações são distribuídas através de check-ins.
+  local              Local                  @relation(fields: [local_id], references: [id])
+  destinatarios      DoacaoDestinatario[] // Para doações específicas, como presentes de aniversário.
+
+  @@map("doacoes")
+}
+
+// Model para registrar a presença de uma criança e, opcionalmente, a entrega de uma doação.
+model Checkin {
+  id                   String   @id @default(uuid())
+  crianca_id           String   // FK para a criança.
+  local_id             String   // FK para o local do check-in.
+  sessao_id            String?  // ID para agrupar check-ins feitos em lote (em massa).
+  data_checkin         DateTime @default(now())
+  observacoes          String?
+  doacao_id            String?  // FK para a doação entregue (se houver).
+  quantidade_consumida Int?     // Quantidade consumida da doação (para controle de estoque).
+  presente             Boolean  @default(true) // Indica se a criança estava presente ou ausente.
+  created_at           DateTime @default(now())
+
+  // Relacionamentos
+  crianca              Crianca  @relation(fields: [crianca_id], references: [id])
+  doacao               Doacao?  @relation(fields: [doacao_id], references: [id])
+  local                Local    @relation(fields: [local_id], references: [id])
+
+  @@map("checkins")
+}
+
+// Tabela de junção (pivot table) para o relacionamento Many-to-Many entre Colaboradores e Locais.
+model ColaboradorLocal {
+  id             String   @id @default(uuid())
+  colaborador_id String   // FK para `Profile`.
+  local_id       String   // FK para `Local`.
+  created_at     DateTime @default(now())
+
+  // Relacionamentos
+  colaborador    Profile  @relation(fields: [colaborador_id], references: [id])
+  local          Local    @relation(fields: [local_id], references: [id])
+
+  @@unique([colaborador_id, local_id]) // Garante que um colaborador só pode ser associado a um local uma vez.
+  @@map("colaborador_locais")
+}
+
+// Tabela de junção para doações do tipo "Presente de Aniversário", definindo quais crianças são as destinatárias.
+model DoacaoDestinatario {
+  id         String   @id @default(uuid())
+  doacao_id  String   // FK para `Doacao`.
+  crianca_id String   // FK para `Crianca`.
+  entregue   Boolean  @default(false) // Marca se o presente já foi entregue.
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relacionamentos
+  // `onDelete: Cascade` significa que se a doação ou a criança for deletada, esta entrada também será.
+  doacao     Doacao   @relation(fields: [doacao_id], references: [id], onDelete: Cascade)
+  crianca    Crianca  @relation(fields: [crianca_id], references: [id], onDelete: Cascade)
+
+  @@unique([doacao_id, crianca_id]) // Uma criança só pode ser destinatária da mesma doação uma vez.
+  @@map("doacao_destinatarios")
+}
+
+// Model para registrar logs de auditoria (quem fez o quê, quando e onde).
+model AuditLog {
+  id         String   @id @default(uuid())
+  table_name String   // Nome da tabela afetada (ex: "criancas").
+  operation  String   // Operação realizada (ex: "INSERT", "UPDATE", "DELETE").
+  record_id  String?  // ID do registro afetado.
+  user_id    String?  // ID do usuário que realizou a ação.
+  old_values Json?    // Valores antigos (para UPDATEs).
+  new_values Json?    // Valores novos (para INSERTs e UPDATEs).
+  ip_address Json?    // Endereço IP do usuário.
+  user_agent String?  // Informações do navegador do usuário.
+  created_at DateTime @default(now())
+
+  // Relacionamento
+  user       Profile? @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Model para as tags de saúde (ex: "Alergia a glúten", "Asma").
+model TagSaude {
+  id         String         @id @default(uuid())
+  nome       String         @unique // O nome da tag deve ser único.
+  cor        String?        // Uma cor para identificar a tag visualmente na interface.
+  created_at DateTime       @default(now())
+
+  // Relacionamento: uma tag pode estar associada a várias crianças.
+  criancas   CriancaSaude[]
+
+  @@map("tags_saude")
+}
+
+// Tabela de junção para o relacionamento Many-to-Many entre Crianças e Tags de Saúde.
+model CriancaSaude {
+  id         String   @id @default(uuid())
+  crianca_id String   // FK para `Crianca`.
+  tag_id     String   // FK para `TagSaude`.
+  observacao String?  // Campo para adicionar detalhes específicos (ex: "Alergia severa").
+  created_at DateTime @default(now())
+
+  // Relacionamentos
+  crianca Crianca  @relation(fields: [crianca_id], references: [id], onDelete: Cascade)
+  tag     TagSaude @relation(fields: [tag_id], references: [id])
+
+  @@unique([crianca_id, tag_id]) // Garante que uma criança não pode ter a mesma tag duas vezes.
+  @@map("crianca_saude")
+}
+
+// Model para armazenar tokens de recuperação de senha.
+model PasswordResetToken {
+  id         String   @id @default(uuid())
+  user_id    String   // FK para o usuário que solicitou a recuperação.
+  token      String   @unique @default(uuid()) // O token único enviado por email.
+  usado      Boolean  @default(false) // Marca se o token já foi utilizado.
+  expira_em  DateTime // Data e hora em que o token se torna inválido.
+  created_at DateTime @default(now())
+
+  // Relacionamento
+  user       Profile  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}

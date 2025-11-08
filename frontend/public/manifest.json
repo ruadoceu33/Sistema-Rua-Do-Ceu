@@ -1,0 +1,41 @@
+{
+  "name": "Sistema Rua do Céu",
+  "short_name": "Rua do Céu",
+  "description": "Sistema completo para gestão de serviços beneficiários e doações para crianças",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#E8F3FF",
+  "theme_color": "#4F93E8",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Aniversários do Mês",
+      "short_name": "Aniversários",
+      "description": "Ver aniversários das crianças",
+      "url": "/aniversarios",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Check-in",
+      "short_name": "Check-in",
+      "description": "Fazer check-in de doações",
+      "url": "/checkin",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

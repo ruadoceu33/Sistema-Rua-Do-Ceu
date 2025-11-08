@@ -84,6 +84,12 @@ npm run dev
 # 🚀 Server running on http://0.0.0.0:5000
 # 📚 Swagger docs available at http://0.0.0.0:5000/api-docs
 # 🏥 Health check at http://0.0.0.0:5000/health
+#
+# Nota: O backend também utiliza:
+# - expressão-session para autenticação OAuth
+# - Prisma Client conectado ao Neon PostgreSQL
+# - Rate limiting em produção
+# - CORS configurado para http://localhost:5173
 ```
 
 **O que está acontecendo:**
@@ -226,6 +232,63 @@ fetch('http://localhost:5000/health')
 
 ---
 
+## 🔐 CONFIGURAÇÃO DE AUTENTICAÇÃO E VARIÁVEIS DE AMBIENTE
+
+Após instalar as dependências, configure o arquivo `.env` no diretório `backend/` com as seguintes variáveis:
+
+### **Variáveis Obrigatórias:**
+
+```env
+# Database
+NEON_DB_URL=postgresql://usuario:senha@ep-xxxxx.region.aws.neon.tech/database?sslmode=require
+
+# JWT (Security)
+JWT_SECRET=seu_secret_aleatorio_minimo_32_caracteres
+JWT_EXPIRE_HOURS=24
+JWT_REFRESH_EXPIRE_DAYS=7
+
+# Server
+PORT=5000
+NODE_ENV=development
+HOST=0.0.0.0
+
+# CORS (Segurança)
+CORS_ORIGINS=http://localhost:5173
+
+# Bcrypt (Password Hashing)
+BCRYPT_ROUNDS=12
+
+# Rate Limiting (Produção)
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_REQUESTS=300
+```
+
+### **Variáveis Opcionais (se usar Google OAuth ou Email):**
+
+```env
+# Google OAuth
+GOOGLE_CLIENT_ID=seu_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=seu_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
+
+# Email (Resend)
+RESEND_API_KEY=re_your_api_key
+EMAIL_FROM=noreply@projeto-rua-do-ceu.com
+FRONTEND_URL=http://localhost:5173
+
+# Session (para OAuth flow)
+SESSION_SECRET=seu_session_secret_aleatorio
+```
+
+### **Como gerar secrets aleatórios:**
+
+```bash
+# No terminal Node.js ou seu editor
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
 ## 🛠️ CRIAR PRIMEIRO USUÁRIO ADMIN
 
 Depois que **ambos servidores estiverem rodando**, precisamos criar um usuário:
@@ -348,6 +411,41 @@ npm install
 
 ---
 
+### **❌ Erro: "Invalid token" ou "Token expired"**
+
+**Problema:** Token JWT expirou ou é inválido
+
+**Soluções:**
+1. Fazer login novamente para obter novo token
+2. Ou usar refresh token para renovar: `POST /api/auth/refresh`
+3. Verificar se `JWT_SECRET` é o mesmo no .env
+
+---
+
+### **❌ Google OAuth não funciona**
+
+**Problema:** Erro ao fazer login com Google
+
+**Soluções:**
+1. Verificar se `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` estão configurados
+2. Verificar se a URL de callback está cadastrada no Google Cloud Console
+3. Ensure `GOOGLE_REDIRECT_URI` matches exactly: `http://localhost:5000/api/auth/google/callback`
+4. Verificar se `SESSION_SECRET` está configurado no .env
+
+---
+
+### **❌ Email de recuperação de senha não é enviado**
+
+**Problema:** Endpoint `/api/auth/esqueci-senha` retorna erro
+
+**Soluções:**
+1. Verificar se `RESEND_API_KEY` está configurado
+2. Verificar se `EMAIL_FROM` é um email verificado no Resend
+3. Verificar se `FRONTEND_URL` está correto (usado nos links do email)
+4. Checar logs do backend para erro específico da Resend API
+
+---
+
 ## 📊 VERIFICAÇÃO FINAL - CHECKLIST
 
 Antes de testar, certifique-se:
@@ -357,26 +455,92 @@ Antes de testar, certifique-se:
    ✅ npm install executado
    ✅ npx prisma generate executado
    ✅ npx prisma db push executado
+   ✅ Arquivo .env configurado com:
+      ✅ NEON_DB_URL
+      ✅ JWT_SECRET (mínimo 32 caracteres)
+      ✅ JWT_EXPIRE_HOURS
+      ✅ PORT=5000
+      ✅ NODE_ENV=development
+      ✅ CORS_ORIGINS=http://localhost:5173
+      ✅ BCRYPT_ROUNDS
+      ✅ SESSION_SECRET
    ✅ npm run dev rodando
-   ✅ http://localhost:5000/health responde
+   ✅ http://localhost:5000/health responde OK
+   ✅ http://localhost:5000/api-docs carrega Swagger
 
 ✅ Frontend:
    ✅ npm install executado
    ✅ axios instalado
-   ✅ .env com VITE_API_URL correto
+   ✅ .env.local (ou .env) com VITE_API_URL=http://localhost:5000/api
    ✅ npm run dev rodando
    ✅ http://localhost:5173 abre
+   ✅ Console do navegador sem erros (F12)
 
 ✅ Banco de Dados:
-   ✅ Neon PostgreSQL acessível
-   ✅ Tabelas criadas (prisma db push)
+   ✅ Neon PostgreSQL acessível via NEON_DB_URL
+   ✅ Tabelas criadas (prisma db push realizado)
    ✅ Usuário admin criado
+   ✅ Prisma Studio rodando (npm run db:studio) em http://localhost:5555
+
+✅ Autenticação:
+   ✅ Usuário admin criado com role='admin'
+   ✅ Login básico funcionando
+   ✅ Token JWT sendo retornado
+   ✅ Refresh token funcionando (se implementado no frontend)
+   ✅ Logout funcionando (sessão destruída)
+
+✅ Google OAuth (Opcional):
+   ✅ GOOGLE_CLIENT_ID configurado
+   ✅ GOOGLE_CLIENT_SECRET configurado
+   ✅ GOOGLE_REDIRECT_URI configurado
+   ✅ URL de callback cadastrada no Google Cloud Console
+   ✅ Login com Google funcionando
+
+✅ Email (Opcional):
+   ✅ RESEND_API_KEY configurado
+   ✅ EMAIL_FROM verificado no Resend
+   ✅ FRONTEND_URL correto
+   ✅ Email de recuperação de senha sendo enviado
 
 ✅ Integração:
    ✅ CORS configurado no backend
    ✅ API_URL apontando para backend
    ✅ Login funcionando
+   ✅ Requisições HTTP trafegando entre frontend e backend
+   ✅ Token sendo armazenado e enviado em Headers
 ```
+
+---
+
+## 📡 ENDPOINTS DE AUTENTICAÇÃO DISPONÍVEIS
+
+### **Autenticação Básica:**
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/api/auth/register` | Criar novo usuário |
+| `POST` | `/api/auth/login` | Login com email/senha |
+| `POST` | `/api/auth/refresh` | Renovar access token |
+| `POST` | `/api/auth/google/logout` | Logout e destruir sessão |
+| `GET` | `/api/auth/me` | Obter dados do usuário autenticado |
+
+### **Recuperação de Senha:**
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/api/auth/esqueci-senha` | Solicitar reset de senha |
+| `GET` | `/api/auth/validar-token-reset` | Validar token de reset |
+| `POST` | `/api/auth/resetar-senha` | Resetar senha com token |
+
+### **Google OAuth (Social Login):**
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/api/auth/google/login` | Iniciar fluxo OAuth (server-side) |
+| `GET` | `/api/auth/google/callback` | Callback do Google OAuth |
+| `POST` | `/api/auth/google` | Login com token Google (client-side) |
+
+**Nota:** Use o Swagger em `http://localhost:5000/api-docs` para testar todos os endpoints!
 
 ---
 
@@ -398,13 +562,28 @@ Antes de testar, certifique-se:
 
 ### **4. Autenticação JWT**
 - Frontend envia: email + senha
-- Backend retorna: token (cartão VIP)
+- Backend retorna: access_token (cartão VIP) + refresh_token
 - Frontend guarda: localStorage
-- Próximas requisições: envia token no header
+- Próximas requisições: envia token no header `Authorization: Bearer <token>`
+- **Refresh Token:** Renovar access token expirado sem fazer login novamente
+- **Password Version:** Invalidar todos os tokens se a senha for alterada
 
 ### **5. Environment Variables (.env)**
-- Backend: PORT, JWT_SECRET, DB_URL, CORS
+- Backend: PORT, JWT_SECRET, DB_URL, CORS, BCRYPT_ROUNDS
 - Frontend: VITE_API_URL (deve começar com VITE_)
+- Nunca commitar `.env` no git (adicionar no `.gitignore`)
+
+### **6. Google OAuth (Social Login)**
+- Permite login via conta Google
+- Reduz necessidade de gerenciar senhas
+- Requer configuração no Google Cloud Console
+- Suporta dois fluxos: Server-Side Flow (mais seguro) e Client-Side Flow
+
+### **7. Recuperação de Senha**
+- Token com expiração de 1 hora
+- Token de single-use (não pode ser reutilizado)
+- Email enviado via Resend com template HTML
+- Aviso de segurança se não foi solicitado
 
 ---
 
@@ -451,7 +630,31 @@ Depois que tudo estiver funcionando:
 ---
 
 **Criado em:** 2025-10-09
+**Última atualização:** 2025-11-08
+**Status:** ✅ Completo com autenticação JWT, Google OAuth e Resend Email
 **Sua primeira aplicação fullstack funcionando!** 🎉
+
+---
+
+## 🔒 SECURITY BEST PRACTICES
+
+### **Em Desenvolvimento:**
+- ✅ JWT_SECRET pode ser qualquer valor
+- ✅ CORS aberto para localhost:5173
+- ✅ Rate limiting desativado
+- ✅ Senhas podem ser simples (para teste)
+
+### **Antes de Produção:**
+- ⚠️ Gerar secrets aleatórios de 32+ caracteres
+- ⚠️ Usar HTTPS/SSL obrigatoriamente
+- ⚠️ Ativar rate limiting
+- ⚠️ Configurar CORS apenas para domínios específicos
+- ⚠️ Usar senhas fortes (mínimo 8 caracteres com maiúsculas, números, símbolos)
+- ⚠️ Configurar EMAIL_FROM com domínio verificado
+- ⚠️ Adicionar .env ao .gitignore (nunca fazer commit)
+- ⚠️ Usar variáveis de ambiente no host/provider (Vercel, Railway, etc)
+- ⚠️ Validar todos os inputs no backend
+- ⚠️ Implementar logout em todos os dispositivos após mudança de senha
 
 ---
 

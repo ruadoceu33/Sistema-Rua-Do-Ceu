@@ -2,20 +2,20 @@
 
 ## 📋 Índice
 
-1. [Visão Geral](#visão-geral)
-2. [Arquitetura do Sistema](#arquitetura-do-sistema)
-3. [Tecnologias Utilizadas](#tecnologias-utilizadas)
-4. [Estrutura do Projeto](#estrutura-do-projeto)
-5. [Banco de Dados](#banco-de-dados)
-6. [API - Endpoints](#api---endpoints)
-7. [Autenticação e Segurança](#autenticação-e-segurança)
-8. [Instalação e Configuração](#instalação-e-configuração)
-9. [Desenvolvimento](#desenvolvimento)
-10. [Deploy](#deploy)
-11. [Testes](#testes)
-12. [Troubleshooting](#troubleshooting)
-13. [Contribuindo](#contribuindo)
-14. [Licença](#licença)
+1. [Visão Geral](#-visão-geral)
+2. [Arquitetura do Sistema](#-arquitetura-do-sistema)
+3. [Tecnologias Utilizadas](#-tecnologias-utilizadas)
+4. [Estrutura do Projeto](#-estrutura-do-projeto)
+5. [Banco de Dados](#️-banco-de-dados)
+6. [API - Endpoints](#-api---endpoints)
+7. [Autenticação e Segurança](#-autenticação-e-segurança)
+8. [Instalação e Configuração](#️-instalação-e-configuração)
+9. [Desenvolvimento](#-desenvolvimento)
+10. [Testes](#-testes)
+11. [Troubleshooting](#-troubleshooting)
+12. [Deploy](#-deploy)
+13. [Recursos Adicionais](#-recursos-adicionais)
+14. [Contribuindo](#-contribuindo)
 
 ---
 
@@ -43,6 +43,67 @@ O **Projeto Rua do Céu** é uma plataforma web fullstack desenvolvida para auxi
 3. **Relatórios**: Gerar relatórios e análises para tomada de decisão
 4. **Segurança**: Proteger dados sensíveis com autenticação e controle de acesso
 5. **Auditoria**: Rastrear todas as operações para conformidade e transparência
+
+### Funcionalidades Implementadas ✅
+
+**Gestão de Crianças**
+- Cadastro com múltiplos responsáveis
+- Tags de saúde (alergias, condições médicas)
+- Cálculo automático de idade
+- Histórico de doações
+- Status ativo/inativo
+
+**Gestão de Doações**
+- Controle de estoque em tempo real
+- Doações normais
+- Presentes de aniversário com lista de destinatários
+- Rastreamento de quantidade consumida
+- Validação antes de check-in
+
+**Check-ins (Presença)**
+- Registro individual
+- Operação em massa (bulk)
+- Agrupamento por sessão
+- Validação de estoque
+- Status presente/ausente
+
+**Relatórios e Analytics**
+- Dashboard com estatísticas
+- Atividades recentes do sistema
+- Lista de aniversariantes (com filtros)
+- Ranking de urgência (crianças sem atendimento)
+- Taxa de cobertura por local
+- Análise completa de doações
+- Prestação de contas
+- Exportação para Excel e PDF
+
+**Autenticação e Segurança**
+- Login com email/senha
+- Google OAuth 2.0 (server-side flow)
+- JWT tokens com expiração (24h)
+- Refresh token para renovação automática
+- Recuperação de senha via email
+- Invalidação de sessão após mudança de senha
+- Password version para controle de acesso
+
+**Gestão de Usuários**
+- Criação de colaboradores
+- Workflow de aprovação (admin autoriza novos usuários)
+- Associação com locais de atendimento
+- Controle de papéis (admin/user)
+- Desativação de contas
+
+**Auditoria Completa**
+- Log de todas operações CRUD
+- Rastreamento de usuário responsável
+- Comparação antes/depois (valores antigos e novos)
+- Relatório de atividades
+
+**Progressive Web App (PWA)**
+- Instalação como app nativo
+- Funcionamento offline (parcial)
+- Notificações push
+- Sincronização automática
 
 ---
 
@@ -244,7 +305,160 @@ Armazena informações de todos os usuários do sistema.
 
 ---
 
-#### 2. **password_reset_tokens**
+#### 2. **locais** (Locais de Atendimento)
+
+Representa os lugares onde o projeto atua.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| nome | String | Nome do local |
+| endereco | String | Endereço completo |
+| responsavel | String? | Nome do responsável |
+| telefone | String? | Telefone de contato |
+| created_at | DateTime | Data de criação |
+| updated_at | DateTime | Data de atualização |
+
+**Relacionamentos:**
+- `1:N` com `criancas`
+- `1:N` com `checkins`
+- `1:N` com `doacoes`
+- `1:N` com `colaborador_locais`
+
+---
+
+#### 3. **criancas** (Crianças Atendidas)
+
+Dados das crianças beneficiárias do projeto.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| nome | String | Nome completo |
+| data_nascimento | DateTime | Data de nascimento |
+| idade | Int? | Idade calculada |
+| responsavel | String? | Nome responsável |
+| telefone_responsavel | String? | Telefone responsável |
+| responsavel2 | String? | Segundo responsável |
+| telefone_responsavel2 | String? | Telefone responsável 2 |
+| responsavel3 | String? | Terceiro responsável |
+| telefone_responsavel3 | String? | Telefone responsável 3 |
+| endereco | String? | Endereço da criança |
+| escola | String? | Escola frequentada |
+| numero_escola | String? | Número na escola |
+| observacoes | String? | Observações adicionais |
+| ativo | Boolean | Status ativo/inativo |
+| local_id | UUID (FK) | Local de atendimento |
+| created_at | DateTime | Data de criação |
+| updated_at | DateTime | Data de atualização |
+
+**Relacionamentos:**
+- `N:1` com `locais`
+- `1:N` com `checkins`
+- `M:N` com `tags_saude` (via `crianca_saude`)
+- `1:N` com `doacao_destinatario`
+
+---
+
+#### 4. **doacoes** (Doações/Itens)
+
+Registro de doações recebidas e distribuídas.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| descricao | String | Descrição da doação |
+| quantidade | Int | Quantidade total |
+| quantidade_consumida | Int | Quantidade distribuída |
+| tipo | String | "Normal" ou "Presente Ano" |
+| local_id | UUID (FK) | Local associado |
+| created_at | DateTime | Data de criação |
+| updated_at | DateTime | Data de atualização |
+
+**Relacionamentos:**
+- `N:1` com `locais`
+- `1:N` com `checkins`
+- `1:N` com `doacao_destinatario`
+
+**Nota:** Doações de aniversário ("Presente Ano") DEVEM ter `crianças_destinatarias` associadas.
+
+---
+
+#### 5. **checkins** (Presença/Distribuição)
+
+Registra quando uma criança recebe uma doação.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| crianca_id | UUID (FK) | ID da criança |
+| doacao_id | UUID (FK) | ID da doação |
+| local_id | UUID (FK) | ID do local |
+| status | String | "presente" ou "ausente" |
+| quantidade_recebida | Int | Quantidade que recebeu |
+| data_checkin | DateTime | Data do check-in |
+| sessao_id | String? | Agrupa check-ins em massa |
+| created_at | DateTime | Data de criação |
+| updated_at | DateTime | Data de atualização |
+
+**Relacionamentos:**
+- `N:1` com `criancas`
+- `N:1` com `doacoes`
+- `N:1` com `locais`
+
+---
+
+#### 6. **tags_saude** (Alergias/Condições Médicas)
+
+Alergias e condições médicas das crianças.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| nome | String (UNIQUE) | Nome da tag (ex: "Alergia a Leite") |
+| descricao | String? | Descrição detalhada |
+| created_at | DateTime | Data de criação |
+| updated_at | DateTime | Data de atualização |
+
+**Relacionamentos:**
+- `M:N` com `criancas` (via `crianca_saude`)
+
+---
+
+#### 7. **crianca_saude** (Associação M:N)
+
+Relacionamento entre crianças e tags de saúde.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| crianca_id | UUID (FK, PK) | ID da criança |
+| tag_saude_id | UUID (FK, PK) | ID da tag de saúde |
+
+---
+
+#### 8. **doacao_destinatario** (Presentes de Aniversário)
+
+Relacionamento entre doações e crianças que receberão presentes.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| doacao_id | UUID (FK, PK) | ID da doação |
+| crianca_id | UUID (FK, PK) | ID da criança |
+
+---
+
+#### 9. **colaborador_locais** (Associação M:N)
+
+Relacionamento entre colaboradores e locais de atendimento.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| profile_id | UUID (FK, PK) | ID do colaborador |
+| local_id | UUID (FK, PK) | ID do local |
+
+---
+
+#### 10. **password_reset_tokens**
 
 Armazena tokens para recuperação de senha.
 
@@ -258,7 +472,23 @@ Armazena tokens para recuperação de senha.
 
 ---
 
-(As demais tabelas permanecem as mesmas, com exceção das alterações na tabela `profiles`)
+#### 11. **audit_logs** (Sistema de Auditoria)
+
+Rastreamento de todas as operações CRUD no sistema.
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| id | UUID (PK) | Identificador único |
+| user_id | UUID (FK) | ID do usuário que fez a operação |
+| tabela | String | Nome da tabela modificada |
+| operacao | String | "INSERT", "UPDATE" ou "DELETE" |
+| record_id | String | ID do registro afetado |
+| valores_antigos | JSON? | Valores antes da modificação |
+| valores_novos | JSON? | Valores depois da modificação |
+| created_at | DateTime | Data da operação |
+
+**Relacionamentos:**
+- `N:1` com `profiles`
 
 ---
 
@@ -454,13 +684,45 @@ Exporta dados de relatórios (como doações) para um arquivo Excel.
 
 ### Segurança Implementada
 
+#### 1. **Senhas**
+- Hash: bcryptjs com 10 rounds
+- Armazenamento seguro
+- Recuperação via token de uso único
+
 #### 2. **JWT Tokens**
 - Assinatura: HMAC SHA256
 - Secret mínimo: 32 caracteres
 - Expiração: 24 horas (configurável)
 - **Invalidação de Sessão**: O payload do JWT contém um `passwordVersion`. Se a senha do usuário for alterada, o `password_version` no banco de dados é incrementado. Tokens com uma versão antiga são automaticamente rejeitados, deslogando o usuário de todas as sessões ativas.
 
-(As demais seções de segurança permanecem as mesmas)
+#### 3. **Headers de Segurança (Helmet)**
+- Content Security Policy (CSP)
+- X-Frame-Options (proteção contra clickjacking)
+- X-Content-Type-Options (proteção contra MIME sniffing)
+- Strict-Transport-Security (HSTS)
+
+#### 4. **Proteção de Dados**
+- Conexão com banco: SSL/TLS (Neon)
+- Conexão HTTPS em produção
+- CORS configurado para origens autorizadas
+- Rate limiting: 300 requisições por IP a cada 15 minutos
+
+#### 5. **Validação de Dados**
+- Backend: express-validator em todas as rotas
+- Frontend: Zod schemas type-safe
+- Validação de telefone para Brasil
+
+#### 6. **Autenticação Multi-Camada**
+- JWT para APIs
+- Google OAuth 2.0 com server-side flow (mais seguro)
+- CSRF protection via state parameter
+- Refresh token rotation
+
+#### 7. **Auditoria Completa**
+- Log de todas as operações CRUD
+- Rastreamento de usuário responsável
+- Armazenamento de valores antes/depois
+- Consulta em relatório de atividade
 
 ---
 
@@ -496,17 +758,342 @@ EMAIL_FROM=nao-responda@seu-dominio.com
 
 ---
 
+## 👨‍💻 Desenvolvimento
+
+### Setup Local Completo
+
+#### Backend
+```bash
+cd backend
+npm install
+cp .env.example .env
+# Editar .env com variáveis de ambiente
+npx prisma migrate dev
+npm run dev
+```
+
+#### Frontend
+```bash
+cd frontend
+npm install
+cp .env.example .env
+# Editar .env com variáveis de ambiente
+npm run dev
+```
+
+#### Banco de Dados
+```bash
+# Visualizar banco de dados em GUI
+npx prisma studio
+
+# Executar seed de dados (backend/)
+npm run db:seed
+
+# Reset do banco (cuidado!)
+npx prisma migrate reset
+```
+
+### Scripts Disponíveis
+
+**Backend:**
+```bash
+npm run dev              # Dev com nodemon (auto-reload)
+npm start               # Modo produção
+npm run db:migrate      # Executar migrações pendentes
+npm run db:studio       # Abrir Prisma Studio
+npm run db:seed         # Popular banco com dados
+```
+
+**Frontend:**
+```bash
+npm run dev             # Dev server (Vite) - http://localhost:5173
+npm run build           # Build otimizado para produção
+npm run preview         # Visualizar build localmente
+npm run lint            # ESLint para verificação de código
+```
+
+### Estrutura de Componentes (Frontend)
+
+```
+components/
+├── admin/              # Componentes exclusivos para admin
+├── birthday/           # Componentes de aniversário
+├── dashboard/          # Widgets do dashboard
+├── forms/              # Componentes de formulários reutilizáveis
+├── layout/
+│   ├── AppLayout.tsx           # Layout principal com sidebar
+│   ├── AppSidebar.tsx          # Barra de navegação
+│   └── ProtectedRoute.tsx      # HOC para rotas autenticadas
+├── ui/                 # Componentes shadcn/ui
+└── ...
+```
+
+### Padrões de Desenvolvimento
+
+1. **Componentes**: Functional components com TypeScript
+2. **State Management**: React Query para servidor, hooks para local
+3. **Validação**: Zod schemas no frontend, express-validator no backend
+4. **Formulários**: React Hook Form + Zod
+5. **Estilo**: Tailwind CSS com componentes shadcn/ui
+6. **Requisições**: Axios com interceptadores para JWT
+
+### Exemplo de Fluxo: Adicionar Nova Página
+
+1. Criar componente em `src/pages/NovaPagina.tsx`
+2. Adicionar rota em `App.tsx` com `<ProtectedRoute>`
+3. Criar endpoint no backend `/api/rota-nova`
+4. Usar React Query para carregar dados
+5. Testar localmente em `http://localhost:5173`
+
+---
+
+## 🧪 Testes
+
+### Testes Manuais
+
+Usar Swagger UI para testar endpoints:
+```
+http://localhost:5000/api-docs
+```
+
+### Checklist de Testes
+
+#### Autenticação
+- [ ] Login com email/senha funciona
+- [ ] Login com Google funciona
+- [ ] Recuperação de senha funciona
+- [ ] Refresh token renova access token
+- [ ] Logout limpa tokens
+- [ ] Usuários pendentes não podem fazer login
+
+#### CRUD Básico
+- [ ] Criar criança
+- [ ] Editar criança
+- [ ] Deletar criança
+- [ ] Listar crianças com paginação
+- [ ] Buscar criança por ID
+
+#### Doações
+- [ ] Criar doação normal
+- [ ] Criar presente de aniversário
+- [ ] Check-in individual
+- [ ] Check-in em massa (bulk)
+- [ ] Validação de estoque
+
+#### Relatórios
+- [ ] Dashboard carrega
+- [ ] Aniversariantes do mês
+- [ ] Ranking de urgência
+- [ ] Exportação Excel
+- [ ] Exportação PDF
+
+#### Administração
+- [ ] Criar novo colaborador
+- [ ] Aprovar colaborador
+- [ ] Associar colaborador a local
+- [ ] Criar local
+- [ ] Listar logs de auditoria
+
+---
+
+## 🐛 Troubleshooting
+
+### Backend não conecta ao banco de dados
+
+**Erro:** `Error connecting to database`
+
+**Solução:**
+```bash
+# 1. Verificar variável de ambiente
+echo $DATABASE_URL
+
+# 2. Testar conexão direta
+npx prisma db execute --stdin < /dev/null
+
+# 3. Ver erro detalhado
+npx prisma migrate dev --name init
+
+# 4. Reset (último recurso)
+npx prisma migrate reset
+```
+
+---
+
+### Frontend não conecta ao backend
+
+**Erro:** `Failed to fetch` ou `CORS error`
+
+**Solução:**
+1. Verificar `VITE_API_URL` em `frontend/.env`
+2. Certificar que backend está rodando: `http://localhost:5000/api-docs`
+3. Verificar CORS no `backend/src/server.js`
+4. Usar DevTools do navegador (Network tab) para ver erros
+
+---
+
+### JWT expirado automaticamente
+
+**Comportamento esperado:** Refresh automático
+
+**Se não funcionar:**
+1. Verificar `JWT_SECRET` em `.env`
+2. Verificar `JWT_EXPIRES_IN` (padrão: 24h)
+3. Limpar localStorage/sessionStorage do navegador
+4. Fazer login novamente
+
+---
+
+### Resend não envia email
+
+**Solução:**
+1. Verificar `RESEND_API_KEY` em `.env`
+2. Verificar `EMAIL_FROM` com domínio verificado no Resend
+3. Acessar dashboard em https://resend.com
+4. Verificar aba "Emails" para ver tentativas de envio
+5. Adicionar domínio verificado se necessário
+
+---
+
+### Prisma Studio não abre
+
+```bash
+# Tente com porta diferente
+npx prisma studio --port 5556
+
+# Ou verifique se porta 5555 está em uso
+lsof -i :5555  # macOS/Linux
+netstat -ano | findstr :5555  # Windows
+```
+
+---
+
+### Erro de migração Prisma
+
+```bash
+# Ver status de migrações
+npx prisma migrate status
+
+# Resetar migrações (cuidado!)
+npx prisma migrate reset
+
+# Criar migration novo
+npx prisma migrate dev --name descricao_mudanca
+```
+
+---
+
+### Componentes shadcn/ui não aparecem
+
+**Solução:**
+1. Certificar que Tailwind está configurado em `tailwind.config.js`
+2. Certificar que CSS global está importado em `main.tsx`
+3. Reconstruir: `npm run build`
+4. Limpar cache: `rm -rf node_modules && npm install`
+
+---
+
+### Erro de validação Zod
+
+**Mensagens de erro não aparecem no formulário:**
+1. Certificar que form possui `noValidate`
+2. Usar `useForm` do react-hook-form
+3. Vincular com `<FormField>` do shadcn/ui
+
+---
+
+## 🚀 Deploy
+
+### Deploy Frontend (Vercel)
+
+1. Push para GitHub
+2. Importar projeto em https://vercel.com
+3. Configurar variáveis de ambiente
+4. Deploy automático em cada push
+5. Domínio automático: `seu-projeto.vercel.app`
+
+**Variáveis necessárias:**
+```
+VITE_API_URL=https://seu-backend.com/api
+VITE_GOOGLE_CLIENT_ID=seu-client-id
+```
+
+---
+
+### Deploy Backend (Render)
+
+1. Push para GitHub
+2. Criar serviço em https://render.com
+3. Conectar repositório
+4. Configurar variáveis de ambiente
+5. Deploy automático
+
+**Variáveis necessárias:**
+```
+DATABASE_URL=postgresql://...
+JWT_SECRET=min-32-caracteres
+GOOGLE_CLIENT_ID=seu-client-id
+GOOGLE_CLIENT_SECRET=seu-secret
+GOOGLE_REDIRECT_URI=https://seu-backend.com/api/auth/google/callback
+RESEND_API_KEY=re_...
+EMAIL_FROM=nao-responda@seudominio.com
+```
+
+---
+
+### Database (Neon)
+
+1. Criar projeto em https://neon.tech
+2. Copiar `DATABASE_URL`
+3. Usar em `.env` (dev) e variável de ambiente (prod)
+4. Backups automáticos
+5. SSL/TLS por padrão
+
+---
+
 ## 📚 Recursos Adicionais
 
+### Documentação
 - [Documentação Prisma](https://www.prisma.io/docs)
 - [Documentação Express](https://expressjs.com/)
 - [Documentação React](https://react.dev/)
 - [Documentação Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com)
+- [shadcn/ui](https://ui.shadcn.com)
+
+### Segurança
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [JWT.io](https://jwt.io/)
-- [Google Identity for Developers](https://developers.google.com/identity)
+- [Google Identity](https://developers.google.com/identity)
+
+### Ferramentas
+- [Swagger Editor](https://editor.swagger.io)
+- [PostMan](https://www.postman.com)
+- [Thunder Client](https://www.thunderclient.com)
+
+---
+
+## 🤝 Contribuindo
+
+1. Criar branch: `git checkout -b feature/sua-feature`
+2. Fazer commits descritivos: `git commit -m "feat: descrição"`
+3. Atualizar testes se necessário
+4. Atualizar DOCUMENTACAO.md se houver mudanças
+5. Fazer PR para revisão
+
+### Convenção de Commits
+
+- `feat:` Nova funcionalidade
+- `fix:` Correção de bug
+- `docs:` Alteração de documentação
+- `style:` Formatação, sem mudança de lógica
+- `refactor:` Mudança de código sem alterar funcionalidade
+- `test:` Adição/alteração de testes
+- `chore:` Dependências, configuração
 
 ---
 
 **Desenvolvido com ❤️ para o Projeto Rua do Céu**
 
-_Última atualização: 3 de Novembro de 2025_
+_Última atualização: 8 de Novembro de 2025_
+_Versão da Documentação: 2.0_
+_Status: ✅ Completa e Atualizada_
